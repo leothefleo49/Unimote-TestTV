@@ -14,6 +14,8 @@ It speaks the **real protocols** the app uses (not mocks of Unimote's code): Rok
 git clone https://github.com/leothefleo49/Unimote-TestTV.git
 cd Unimote-TestTV
 node tv.js          # or: double-click start.bat (Windows) / ./start.sh
+node ip.js          # which IP to type into Unimote + simulator status
+node selftest.js    # verify every protocol works (30 assertions)
 ```
 
 On startup it prints your PC's LAN IP and the dashboard URL:
@@ -61,6 +63,36 @@ Start a subset: `node tv.js roku vizio`
 - **Power off / Wake-on-LAN** — power the TV off from the dashboard: every server stops responding. From the **Unimote app** (native only — browsers can't send UDP), send a Wake-on-LAN packet to `AA:BB:CC:DD:EE:FF` and watch the TV come back on and the app reconnect.
 - **Screen mirroring honesty** — LG gets a real Screen Share launch; other brands should explain what to use instead of pretending.
 
+
+## Troubleshooting
+
+**The dashboard loads on my PC but my phone can't connect to the IP.**
+This is almost always **client isolation (AP isolation)** — common on apartment
+and shared WiFi: every device gets internet, but devices cannot talk to each
+other. Symptom: ARP entries for peers show *Unreachable/Stale* on the PC, and the
+phone just times out.
+
+Fix with **Windows Mobile Hotspot** so the phone and PC share a private network:
+
+1. Settings → Network & Internet → **Mobile hotspot** → turn it ON.
+2. Join that hotspot from the phone.
+3. Run `node ip.js` and use the hotspot address (usually `192.168.137.1`) in Unimote.
+
+Nothing needs restarting — the simulator already listens on all interfaces.
+
+**Or skip the phone entirely**: open Unimote in this PC's browser and enter
+`127.0.0.1`. Everything (all five brands, pairing, casting, faults) works on the
+same machine even on an isolated network.
+
+**A port is "already in use" or access denied.** Port 80 (Sony) may need an
+Administrator terminal on Windows, or start it elsewhere:
+`set SONY_PORT=8080 && node tv.js sony`. Other ports can be remapped with
+`ROKU_PORT`, `SAMSUNG_PORT`, `LG_PORT`, `LG_POINTER_PORT`, `VIZIO_PORT`,
+`CAST_PORT`, `DASH_PORT`.
+
+**Run `node ip.js`** any time to see which address to type into Unimote, whether
+each simulator is running, and the hotspot instructions.
+
 ## Firewall (first run on Windows)
 
 Windows may prompt to allow Node on private networks — allow it, or run once as admin:
@@ -85,4 +117,7 @@ tvs/vizio.js     Vizio SmartCast pairing + keys
 tvs/sony.js      Sony system + IRCC
 tvs/castinfo.js  Android TV / Chromecast detection endpoint
 tvs/wol.js       Wake-on-LAN UDP listener
+ip.js            address helper + simulator status + hotspot guidance
+selftest.js      dependency-free protocol test suite (30 assertions)
+wol-send.js      send a real magic packet to wake the simulated TV
 ```
