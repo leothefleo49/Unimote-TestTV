@@ -1,0 +1,12 @@
+
+  Unimote TestTV — starting
+  Brands: roku, samsung, lg, vizio, sony, cast
+  Press Ctrl+C to stop.
+
+  ┌──────────────────────────────────────────────────────┐
+  │  Unimote TestTV dashboard                            │
+  │  →  http://localhost:8520  (or http://192.168.86.141:8520)  │
+  └──────────────────────────────────────────────────────┘
+  Point Unimote (manual IP) at:  192.168.86.141
+  Point Unimote (manual IP) at:  172.23.112.1
+

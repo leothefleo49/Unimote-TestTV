@@ -1,0 +1,13 @@
+{
+  "name": "unimote-testtv",
+  "version": "1.0.0",
+  "description": "Turn your PC into five TVs (Roku, Samsung, LG webOS, Vizio, Sony) to test Unimote X connectivity, pairing, and every button — with a live dashboard.",
+  "main": "tv.js",
+  "scripts": {
+    "start": "node tv.js"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "license": "MIT"
+}
