@@ -13,7 +13,7 @@ It speaks the **real protocols** the app uses (not mocks of Unimote's code): Rok
 ```bash
 git clone https://github.com/leothefleo49/Unimote-TestTV.git
 cd Unimote-TestTV
-node tv.js
+node tv.js          # or: double-click start.bat (Windows) / ./start.sh
 ```
 
 On startup it prints your PC's LAN IP and the dashboard URL:
