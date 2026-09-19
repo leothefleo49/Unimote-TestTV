@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unimote TestTV — Control Room</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📺</text></svg>">
+<style>
+  :root { color-scheme: dark; --bg:#0b1020; --panel:#121936; --panel2:#0a0f22; --line:#26305a; --ink:#e5e9f0; --dim:#93a4d0; --accent:#38bdf8; --good:#34d399; --warn:#fbbf24; --bad:#f87171; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.45 system-ui, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
+  header { padding:12px 20px; background:linear-gradient(180deg,#151d3b,#101731); border-bottom:1px solid var(--line); display:flex; gap:12px; align-items:center; flex-wrap:wrap; position:sticky; top:0; z-index:10; }
+  header h1 { font-size:17px; margin:0; white-space:nowrap; }
+  .pill { font-size:11px; padding:3px 10px; border-radius:20px; border:1px solid var(--line); color:var(--dim); white-space:nowrap; }
+  .pill.ok { background:#0d2f22; border-color:#2f7d4f; color:var(--good); }
+  .pill.bad { background:#3a1420; border-color:#8f2d44; color:var(--bad); }
+  .addr { display:flex; gap:6px; align-items:center; margin-left:auto; }
+  input[type=text] { background:var(--panel); border:1px solid #33406f; color:var(--ink); border-radius:9px; padding:7px 10px; font:12px ui-monospace,Consolas,monospace; min-width:230px; }
+  button { background:#263469; color:#dbe4ff; border:1px solid #3b4c8f; padding:6px 12px; border-radius:9px; cursor:pointer; font-size:13px; }
+  button:hover { background:#32427f; }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  button.danger { background:#5c1f2e; border-color:#8f2d44; }
+  button.small { padding:4px 8px; font-size:12px; }
+  main { display:grid; grid-template-columns:360px 1fr; gap:16px; padding:16px 20px 40px; max-width:1500px; margin:0 auto; align-items:start; }
+  @media (max-width:960px){ main { grid-template-columns:1fr; } }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:16px; }
+  h2 { font-size:12px; text-transform:uppercase; letter-spacing:.09em; color:var(--dim); margin:0 0 10px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  #banner { display:none; margin:0 0 16px; padding:12px 14px; border-radius:12px; background:#3a2a10; border:1px solid #8a6a1f; color:#ffe9b3; font-size:13px; }
+  #banner code { background:#0000004d; padding:1px 6px; border-radius:6px; font-family:ui-monospace,Consolas,monospace; }
+  #banner a { color:#ffd479; }
+  /* TV */
+  .tv { background:#000; border-radius:14px; border:7px solid #2a3560; padding:22px 18px; text-align:center; position:relative; overflow:hidden; }
+  .tv::after { content:''; position:absolute; inset:0; background:radial-gradient(120% 80% at 50% -10%, #ffffff14, transparent 60%); pointer-events:none; }
+  .tv .screen { font-size:26px; font-weight:800; min-height:34px; word-break:break-word; }
+  .tv .sub { color:#9aa7c7; margin-top:8px; font-size:12px; font-family:ui-monospace,Consolas,monospace; }
+  .tv.off .screen { color:#3a3a3a; }
+  .bar { height:10px; background:#1c2547; border-radius:6px; margin-top:14px; overflow:hidden; }
+  .bar > div { height:100%; width:0; background:linear-gradient(90deg,#38bdf8,#818cf8); transition:width .18s; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+  .stat { background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:8px 10px; }
+  .stat .k { font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--dim); }
+  .stat .v { font-weight:700; font-family:ui-monospace,Consolas,monospace; }
+  .row { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px dashed #222c52; font-size:13px; gap:8px; }
+  .row:last-child { border:0; }
+  .faultrow { display:grid; grid-template-columns:64px 1fr; gap:8px; align-items:center; margin-bottom:7px; }
+  .faultrow .nm { font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
+  .modes { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; }
+  .modes button { padding:5px 2px; font-size:12px; }
+  .modes button.on { background:var(--accent); color:#06263a; border-color:#7dd3fc; font-weight:700; }
+  pre#log { max-height:300px; overflow:auto; font:12px/1.5 ui-monospace,Consolas,monospace; background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:10px; margin:0; }
+  pre#log .t { color:#64748b; }
+  pre#log .b { color:#7dd3fc; }
+  .pin { font-family:ui-monospace,Consolas,monospace; font-size:26px; letter-spacing:.4em; color:var(--warn); text-align:center; padding:6px 0; }
+  .brand { margin-bottom:14px; }
+  .brand h3 { display:flex; justify-content:space-between; align-items:center; font-size:12px; margin:0 0 7px; color:#cbd5f5; }
+  .brand .pct { font-weight:800; color:var(--accent); font-family:ui-monospace,Consolas,monospace; }
+  .pbar { height:6px; background:#1c2547; border-radius:4px; overflow:hidden; margin-bottom:8px; }
+  .pbar > div { height:100%; background:linear-gradient(90deg,#34d399,#38bdf8); width:0; transition:width .2s; }
+  .chips { display:flex; flex-wrap:wrap; gap:4px; }
+  .chip { font-size:11px; font-family:ui-monospace,Consolas,monospace; padding:2px 7px; border-radius:20px; border:1px solid #33406f; color:#6b7aa8; }
+  .chip.done { background:#10321f; border-color:#2f7d4f; color:#6ee7a0; }
+  .hint { color:#8fa0cc; font-size:12px; margin:8px 0 0; }
+  a { color:var(--accent); }
+  .center { text-align:center; }
+</style>
+</head>
+<body>
+<header>
+  <h1>📺 Unimote TestTV</h1>
+  <span class="pill" id="conn">connecting…</span>
+  <span class="pill" id="where"></span>
+  <div class="addr">
+    <label for="simaddr" style="font-size:12px;color:var(--dim)">Simulator</label>
+    <input type="text" id="simaddr" placeholder="http://localhost:8520" spellcheck="false">
+    <button class="small" id="reconnect">Connect</button>
+  </div>
+</header>
+
+<main>
+  <div>
+    <div id="banner"></div>
+
+    <section>
+      <h2>TV Screen <span class="pill" id="powerpill">—</span></h2>
+      <div class="tv" id="tv">
+        <div class="screen" id="screen">—</div>
+        <div class="sub" id="tvsub"></div>
+        <div class="bar"><div id="volbar"></div></div>
+      </div>
+      <div class="grid2">
+        <div class="stat"><div class="k">Volume</div><div class="v" id="s-volume">–</div></div>
+        <div class="stat"><div class="k">Channel</div><div class="v" id="s-channel">–</div></div>
+        <div class="stat"><div class="k">Input</div><div class="v" id="s-input">–</div></div>
+        <div class="stat"><div class="k">App</div><div class="v" id="s-app">–</div></div>
+      </div>
+      <div class="grid2">
+        <button id="pwr" class="danger">Power off</button>
+        <button id="reset-all">Reset everything</button>
+      </div>
+      <p class="hint">Powered-off TVs stop answering every protocol — only a Wake-on-LAN magic packet (UDP 9/7, MAC <b>AA:BB:CC:DD:EE:FF</b>) brings them back. That's how you test Unimote's Wake TV button.</p>
+    </section>
+
+    <section>
+      <h2>Fault injection <button class="small" id="faults-clear">all ok</button></h2>
+      <div id="faults"></div>
+      <p class="hint">ok = normal · slow = 2.5s delays · error = 500s · offline = drop connections. Watch Unimote stay honest under each.</p>
+    </section>
+
+    <section>
+      <h2>Pairings <button class="small danger" id="revoke">Revoke all</button></h2>
+      <div id="pairings"><div class="row"><span>loading…</span></div></div>
+      <div class="row" style="border:0">
+        <span>Vizio PIN mode <button class="small" id="pinmode">—</button></span>
+        <span style="font-size:11px;color:var(--dim)">fixed = 1234</span>
+      </div>
+      <div class="pin" id="pin"></div>
+      <p class="hint">Revoking also drops live sockets, exactly like “forget device” on a real TV — so Unimote has to re-pair. Watch its status chip: it should stay connected and heal itself.</p>
+    </section>
+  </div>
+
+  <div>
+    <section>
+      <h2>Protocol log <button class="small" id="log-clear">Clear</button></h2>
+      <pre id="log"></pre>
+    </section>
+
+    <section>
+      <h2>Button coverage <span class="pill" id="covtotal"></span></h2>
+      <p class="hint">Every chip is a real protocol message Unimote must send. Press the matching button in the app — the chip lights up only when the simulator actually receives it. That's your completeness test for every button on every remote.</p>
+      <div id="coverage" style="margin-top:12px"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var DEFAULT_API = 'http://localhost:8520';
+  var api = null;
+  var es = null;
+  var polling = null;
+  var state = null, coverage = null, live = {}, events = [];
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function isLocalHostname(h) { return h === 'localhost' || h === '127.0.0.1' || h === '[::1]'; }
+
+  function guessApi() {
+    // Same-origin when served by the simulator itself (localhost:8520).
+    if (location.port && location.port === '8520') return location.origin;
+    // A saved override wins (lets you point at another machine's simulator).
+    var saved = null;
+    try { saved = localStorage.getItem('testtv_api'); } catch (e) {}
+    if (saved) return saved;
+    // Default: the simulator on this PC. Browsers treat localhost as a secure
+    // origin, so an https page (e.g. the Vercel copy) may still reach it.
+    return DEFAULT_API;
+  }
+
+  function mixedContentBlocked(target) {
+    try {
+      var t = new URL(target);
+      return location.protocol === 'https:' && t.protocol === 'http:' && !isLocalHostname(t.hostname);
+    } catch (e) { return false; }
+  }
+
+  function banner(html) {
+    var b = $('banner');
+    if (!html) { b.style.display = 'none'; b.innerHTML = ''; return; }
+    b.innerHTML = html;
+    b.style.display = 'block';
+  }
+
+  function showUnreachable(err) {
+    $('conn').className = 'pill bad';
+    $('conn').textContent = 'simulator unreachable';
+    var msg = '<b>Can\'t reach the simulator at <code>' + api + '</code></b>.' +
+      '<br>1) Start it on the PC that acts as the TV: <code>node tv.js</code> (or double-click <code>start.bat</code>).' +
+      '<br>2) Keep this address pointing at that PC — <code>http://localhost:8520</code> when you\'re on the same machine, or <code>http://&lt;pc-lan-ip&gt;:8520</code> from another device.';
+    if (mixedContentBlocked(api)) {
+      msg += '<br><br><b>Heads up:</b> this page is served over https, and browsers block https pages from calling plain <code>http://</code> addresses other than <code>localhost</code>/<code>127.0.0.1</code>.' +
+        ' So from a phone or another device, open the local dashboard directly (<code>http://&lt;pc-lan-ip&gt;:8520</code>) instead of this hosted copy — or run the app on the PC where the simulator lives.';
+    }
+    if (err) msg += '<br><br><span style="opacity:.75">Last error: ' + String(err).slice(0, 160) + '</span>';
+    banner(msg);
+  }
+
+  function connected() {
+    $('conn').className = 'pill ok';
+    $('conn').textContent = 'live';
+    banner(null);
+  }
+
+  function fmtTime(t) { try { return new Date(t).toTimeString().slice(0, 8); } catch (e) { return ''; } }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+
+  function render() {
+    $('where').textContent = location.hostname + (location.port ? ':' + location.port : '');
+    if (!state) return;
+    var s = state;
+
+    // TV screen
+    var tv = $('tv'), screen = $('screen'), sub = $('tvsub');
+    var off = s.power === 'off';
+    tv.className = 'tv' + (off ? ' off' : '');
+    screen.textContent = off ? '⏻ OFF' : (s.app ? s.app : (s.muted ? '🔇 ' + s.input : s.input));
+    sub.textContent = off
+      ? 'only Wake-on-LAN reaches me'
+      : 'power ' + s.power + ' · ch ' + s.channel + ' · vol ' + s.volume + (s.muted ? ' (muted)' : '');
+    $('volbar').style.width = s.volume + '%';
+    $('powerpill').textContent = s.power;
+    $('pwr').textContent = off ? 'Power on' : 'Power off';
+    $('s-volume').textContent = s.muted ? s.volume + ' (muted)' : s.volume;
+    $('s-channel').textContent = s.channel;
+    $('s-input').textContent = s.input;
+    $('s-app').textContent = s.app || '—';
+
+    // Faults
+    var brands = ['roku', 'samsung', 'lg', 'vizio', 'sony', 'cast'];
+    var modes = ['ok', 'slow', 'error', 'offline'];
+    $('faults').innerHTML = brands.map(function (b) {
+      return '<div class="faultrow"><div class="nm">' + b + '</div><div class="modes">' +
+        modes.map(function (m) {
+          return '<button class="' + (s.faults[b] === m ? 'on' : '') + '" data-fault="' + b + '" data-mode="' + m + '">' + m + '</button>';
+        }).join('') + '</div></div>';
+    }).join('');
+
+    // Pairings
+    var sam = Object.keys(s.pairings.samsung || {}).length;
+    var lgk = Object.keys(s.pairings.lgClientKeys || {}).length;
+    var vz = s.pairings.vizio || {};
+    $('pairings').innerHTML =
+      '<div class="row"><span>Samsung tokens</span><span>' + (sam ? sam + ' active' : 'none yet') + '</span></div>' +
+      '<div class="row"><span>LG client-keys</span><span>' + (lgk ? lgk + ' active' : 'none yet') + '</span></div>' +
+      '<div class="row"><span>Vizio auth</span><span>' + (vz.authToken ? 'paired' : 'unpaired') + '</span></div>' +
+      '<div class="row"><span>Live sockets</span><span>' + (live.samsung || 0) + ' samsung · ' + (live.lg || 0) + ' lg · ' + (live.lgPointer || 0) + ' pointer</span></div>';
+    $('pinmode').textContent = vz.pinMode === 'fixed' ? 'fixed (1234)' : 'random';
+    $('pin').textContent = vz.pin ? ('PIN ' + vz.pin) : '';
+
+    // Log
+    $('log').innerHTML = events.slice(-140).reverse().map(function (e) {
+      return '<div><span class="t">' + fmtTime(e.t) + '</span> <span class="b">[' + esc(e.brand) + ']</span> ' + esc(e.message) + '</div>';
+    }).join('');
+
+    // Coverage
+    if (coverage) {
+      var totalGot = 0, totalMax = 0;
+      var html = Object.keys(coverage).filter(function (k) { return k !== 'casts'; }).map(function (b) {
+        var c = coverage[b];
+        var pct = c.expected ? Math.round(100 * c.got / c.expected) : 100;
+        totalGot += c.got; totalMax += c.expected;
+        var ids = c.expectedIds || [];
+        return '<div class="brand"><h3><span>' + b.toUpperCase() + '</span><span class="pct">' + pct + '%  (' + c.got + '/' + c.expected + ')</span></h3>' +
+          '<div class="pbar"><div style="width:' + pct + '%"></div></div>' +
+          '<div class="chips">' + ids.map(function (id) {
+            return '<span class="chip ' + (c.done.indexOf(id) >= 0 ? 'done' : '') + '" title="' + esc(id) + '">' + esc(id) + '</span>';
+          }).join('') + '</div></div>';
+      }).join('');
+      if (coverage.casts && coverage.casts.length) {
+        html += '<div class="brand"><h3><span>CAST / LAUNCH EVENTS</span></h3><div class="chips">' +
+          coverage.casts.map(function (x) { return '<span class="chip done">' + esc(JSON.stringify(x)) + '</span>'; }).join('') + '</div></div>';
+      }
+      $('coverage').innerHTML = html;
+      $('covtotal').textContent = totalMax ? totalGot + ' / ' + totalMax + ' messages verified' : '';
+    }
+  }
+
+  function apiPost(body) {
+    return fetch(api + '/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function () { pollOnce(); })
+      .catch(function (e) { showUnreachable(e); });
+  }
+
+  function pollOnce() {
+    fetch(api + '/snapshot', { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (snap) {
+        state = snap.state; coverage = snap.coverage; events = snap.events || []; live = snap.live || {};
+        connected(); render();
+      })
+      .catch(function (e) { showUnreachable(e); });
+  }
+
+  function connectStream() {
+    if (es) { try { es.close(); } catch (e) {} es = null; }
+    if (polling) { clearInterval(polling); polling = null; }
+    try {
+      es = new EventSource(api + '/events');
+      es.onopen = function () { connected(); };
+      es.onmessage = function (m) {
+        var data;
+        try { data = JSON.parse(m.data); } catch (e) { return; }
+        if (data.state) state = data.state;
+        if (data.live) live = data.live;
+        if (data.coverage) coverage = data.coverage;
+        if (data.event) { events.push(data.event); if (events.length > 250) events.shift(); }
+        connected(); render();
+      };
+      es.onerror = function () {
+        // SSE can fail behind proxies / mixed-content rules: fall back to polling.
+        if (es) { try { es.close(); } catch (e) {} es = null; }
+        $('conn').className = 'pill';
+        $('conn').textContent = 'polling…';
+        if (!polling) polling = setInterval(pollOnce, 1500);
+        pollOnce();
+      };
+    } catch (e) {
+      if (!polling) polling = setInterval(pollOnce, 1500);
+      pollOnce();
+    }
+  }
+
+  function applyApi(next) {
+    api = next.replace(/\/+$/, '');
+    try { localStorage.setItem('testtv_api', api); } catch (e) {}
+    $('simaddr').value = api;
+    pollOnce();
+    connectStream();
+  }
+
+  // ── wiring ────────────────────────────────────────────────────────────────
+  $('reconnect').addEventListener('click', function () {
+    var v = $('simaddr').value.trim();
+    if (!v) return;
+    if (!/^https?:\/\//.test(v)) v = 'http://' + v;
+    applyApi(v);
+  });
+  $('simaddr').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('reconnect').click(); });
+
+  $('pwr').addEventListener('click', function () { apiPost({ op: 'power' }); });
+  $('reset-all').addEventListener('click', function () { apiPost({ op: 'reset-all' }); });
+  $('revoke').addEventListener('click', function () { apiPost({ op: 'reset-pairings' }); });
+  $('pinmode').addEventListener('click', function () { apiPost({ op: 'pin-mode' }); });
+  $('faults-clear').addEventListener('click', function () {
+    ['roku', 'samsung', 'lg', 'vizio', 'sony', 'cast'].forEach(function (b) { apiPost({ op: 'fault', tv: b, mode: 'ok' }); });
+  });
+  $('log-clear').addEventListener('click', function () { events = []; render(); });
+
+  $('faults').addEventListener('click', function (e) {
+    var b = e.target.getAttribute && e.target.getAttribute('data-fault');
+    if (b) apiPost({ op: 'fault', tv: b, mode: e.target.getAttribute('data-mode') });
+  });
+
+  var saved = null;
+  try { saved = localStorage.getItem('testtv_api'); } catch (e) {}
+  applyApi(saved || guessApi());
+})();
+</script>
+</body>
+</html>
