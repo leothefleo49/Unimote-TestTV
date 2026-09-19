@@ -13,10 +13,15 @@ It speaks the **real protocols** the app uses (not mocks of Unimote's code): Rok
 ```bash
 git clone https://github.com/leothefleo49/Unimote-TestTV.git
 cd Unimote-TestTV
-node tv.js          # or: double-click start.bat (Windows) / ./start.sh
-node ip.js          # which IP to type into Unimote + simulator status
-node selftest.js    # verify every protocol works (30 assertions)
+node tv.js             # or: double-click start.bat (Windows) / ./start.sh
+node ip.js             # which IP to type into Unimote + simulator status
+node selftest.js       # verify every protocol works (30 assertions)
+node discovery-test.js # verify SSDP discovery finds all five TVs (14 assertions)
 ```
+
+> `discovery-test.js` runs **Unimote's own SSDP parser** (transpiled from the app
+> checkout with esbuild) against this simulator's real responses — it's the same
+> code the app uses to find TVs, not a copy.
 
 On startup it prints your PC's LAN IP and the dashboard URL:
 
@@ -45,6 +50,7 @@ Then:
 | Sony | `80` | HTTP | `/sony/system` JSON-RPC + `/sony/IRCC` SOAP |
 | Cast info | `8008` | HTTP | `eureka_info` (makes the scanner find an "Android TV") |
 | Dashboard | `8520` | HTTP + SSE | live screen, log, coverage, controls |
+| **SSDP discovery** | UDP `1900` | UPnP | answers M-SEARCH + sends NOTIFY — how Unimote's automatic scan finds these TVs |
 | Wake-on-LAN | UDP `9`/`7` | UDP | magic packet powers the TV back on (MAC `AA:BB:CC:DD:EE:FF`) |
 
 Every port has an env override (`ROKU_PORT`, `SAMSUNG_PORT`, `LG_PORT`, `LG_POINTER_PORT`, `VIZIO_PORT`, `SONY_PORT`, `CAST_PORT`, `DASH_PORT`). Port `80` (Sony) may need an Administrator terminal on Windows; or run `set SONY_PORT=8080 && node tv.js sony`.

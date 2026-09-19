@@ -55,6 +55,13 @@ for (const key of selected) {
   }
 }
 
+// SSDP responder: makes every simulated TV discoverable by automatic scanning
+try {
+  require('./tvs/discovery').start();
+} catch (e) {
+  console.error(`  ✗ SSDP responder failed: ${e.message}`);
+}
+
 // Wake-on-LAN listener (works while the "TV" is powered off)
 try {
   require('./tvs/wol').start();
